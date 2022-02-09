@@ -63,24 +63,13 @@ class Timeline {
         }
 
         DecimalFormat fmt = new DecimalFormat("#.000");
-        int aNum = 0;
-        int bNum = 0;
 
         for (int i = 0; i < tl.getSize(); i++) {
             Event e = tl.popNext();
             String type = e.getType();
             double timestamp = e.getTimestamp();
-            int num;
 
-            if (type.equals("A")) {
-                num = aNum;
-                aNum++;
-            } else {
-                num = bNum;
-                bNum++;
-            }
-
-            System.out.println(type + Integer.toString(num) + ": " +
+            System.out.println(type + Integer.toString(e.getEventID()) + ": " +
                                fmt.format(timestamp));
         }
     }
