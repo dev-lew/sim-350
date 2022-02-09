@@ -24,38 +24,36 @@ class Timeline {
         double time = Double.parseDouble(args[2]);
 
         Timeline tl = new Timeline();
-        Event eventAPrev = new Event("A", 0.0);
-        Event eventBPrev = new Event("B", 0.0);
-        Event eventANext;
-        Event eventBNext;
+        Event eventA = new Event("A", 0.0);
+        Event eventB = new Event("B", 0.0);
+        double prevTimestampA = 0.0;
+        double prevTimestampB = 0.0;
         Boolean stopGeneratingA = false;
         Boolean stopGeneratingB = false;
 
-        tl.addToTimeline(eventAPrev);
-        tl.addToTimeline(eventBPrev);
+        tl.addToTimeline(eventA);
+        tl.addToTimeline(eventB);
 
         while (true) {
             if (!stopGeneratingA) {
-                eventANext = new Event("A", eventAPrev.getTimestamp() + Exp.getExp(lambdaA));
+                eventA = new Event("A", prevTimestampA + Exp.getExp(lambdaA));
 
-                if (eventANext.getTimestamp() > time)
+                if (eventA.getTimestamp() > time)
                     stopGeneratingA = true;
                 else {
-                    tl.addToTimeline(eventANext);
-                    eventAPrev = eventANext;
-                    eventANext = null;
+                    tl.addToTimeline(eventA);
+                    prevTimestampA = eventA.getTimestamp();
                 }
             }
 
             if (!stopGeneratingB) {
-                eventBNext = new Event("B", eventBPrev.getTimestamp() + Exp.getExp(lambdaB));
+                eventB = new Event("B", prevTimestampB + Exp.getExp(lambdaB));
 
-                if (eventBNext.getTimestamp() > time)
+                if (eventB.getTimestamp() > time)
                     stopGeneratingB = true;
                 else {
-                    tl.addToTimeline(eventBNext);
-                    eventBPrev = eventBNext;
-                    eventBNext = null;
+                    tl.addToTimeline(eventB);
+                    prevTimestampB = eventB.getTimestamp();
                 }
             }
 
