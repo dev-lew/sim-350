@@ -66,8 +66,9 @@ class Timeline {
             Event e = tl.popNext();
             String type = e.getType();
             double timestamp = e.getTimestamp();
+            int eventID = e.getEventID();
 
-            System.out.println(type + Integer.toString(e.getEventID()) + ": " +
+            System.out.println(type + Integer.toString(eventID) + ": " +
                                fmt.format(timestamp));
         }
     }
