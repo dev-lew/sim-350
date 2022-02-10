@@ -1,6 +1,21 @@
 class Simulator {
+    class State {
+        private int queueLength;
+        private double requestTime;
+        private double busyTime;
+    }
+
     void simulate(double time) {
 
+    }
+
+    State initState() {
+        return new State();
+    }
+
+    Timeline initTimeline() {
+        Timeline tl =  new Timeline();
+        return tl;
     }
 
     public static void main(String[] args) {
