@@ -1,3 +1,5 @@
+package ps2;
+
 class Exp {
     // Generate a random number following an exponential distribution
     static double getExp(double lambda) {

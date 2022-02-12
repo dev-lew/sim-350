@@ -44,8 +44,10 @@ class Simulator {
         }
     }
 
-    State simState;
-    Timeline simTimeline;
+    private State simState;
+    private Timeline simTimeline;
+    private double avgArrivalRate;
+    private double avgServiceTime;
 
     double time = 0;
 
@@ -64,18 +66,37 @@ class Simulator {
         case BIRTH:
             Request r = new Request();
             r.setArrivalTime(time);
+
+            if (simState.getQueueLength() == 1) {
+                r.setStartTime(time);
+                simTimeline.addToTimeline(new Event(DEATH, time));
+            }
+            Event newBirth = new Event(BIRTH, time + Exp.getExp(avgArrivalRate));
+
+            simTimeline.addToTimeline(newBirth);
+
+            // Assuming Monitor event will have same timestamp as previous birth
+            simTimeline.addToTimeline(new Event(MONITOR, newBirth.getTimestamp()));
             break;
         case DEATH:
         }
     }
 
-    void simulate(double simDuration) {
-        initState();
-        initTimeline();
+        void simulate(double simDuration, double avgArrivalrate,
+                      double avgServiceTime) {
+            this.avgArrivalRate = avgArrivalrate;
+            this.avgServiceTime = avgServiceTime;
+            initState();
+            initTimeline();
 
-        while (time < simDuration) {
-            Event e = simTimeline.popNext();
-            executeEvent(e);
+            //add monitfdor when birth event
+            while (true) {
+                Event e = simTimeline.popNext();
+                time += e.getTimestamp();
+
+                if (time >= simDuration)
+                    break;
+                executeEvent(e);
         }
     }
 
