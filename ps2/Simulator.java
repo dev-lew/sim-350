@@ -2,6 +2,7 @@ package ps2;
 
 import static ps2.Event.Type.*;
 
+import java.text.DecimalFormat;
 import java.util.ArrayDeque;
 
 class Simulator {
@@ -9,6 +10,12 @@ class Simulator {
         private double arrivalTime;
         private double startTime;
         private double finishTime;
+        private int requestID;
+        private static int numRequests = 0;
+
+        Request() {
+            this.requestID = numRequests++;
+        }
 
         public void setArrivalTime(double arrivalTime) {
             this.arrivalTime = arrivalTime;
@@ -32,6 +39,10 @@ class Simulator {
 
         public double getFinishTime() {
             return finishTime;
+        }
+
+        public int getRequestID() {
+            return requestID;
         }
     }
 
@@ -102,20 +113,41 @@ class Simulator {
                                   busyTime);
     }
 
+    void printResult(String type, Request r) {
+        double timestamp;
+
+        if (type.equals("ARR")) {
+            timestamp = r.getArrivalTime();
+        } else if (type.equals("START")) {
+            timestamp = r.getStartTime();
+        } else if (type.equals("DONE")) {
+            timestamp = r.getFinishTime();
+        } else {
+            String error = "Error when processing request.";
+            throw new IllegalArgumentException(error);
+        }
+        DecimalFormat fmt = new DecimalFormat("#.000");
+        System.out.println("R" + Integer.toString(r.getRequestID()) +
+                           type + ": " + fmt.format(timestamp));
+    }
+
     void executeEvent(Event e) {
         switch (e.getType()) {
         case BIRTH:
             Request r = new Request();
             r.setArrivalTime(time);
             simState.addRequest(r);
+            printResult("ARR", r);
 
             if (simState.getQueueLength() == 0) {
+                printResult("START", r);
                 r.setStartTime(time);
                 simTimeline.addToTimeline(new Event(DEATH, time +
                                                     Exp.getExp(avgServiceTime)));
             }
             Event newBirth = new Event(BIRTH, time + Exp.getExp(avgArrivalRate));
             simTimeline.addToTimeline(newBirth);
+
             break;
         case MONITOR:
             updateStateVariables();
@@ -125,6 +157,7 @@ class Simulator {
         case DEATH:
             Request done = simState.dispatchRequest();
             done.setFinishTime(time);
+            printResult("DONE", done);
 
             double responseTime = done.getFinishTime() - done.getArrivalTime();
             double busyTime = done.getFinishTime() - done.getStartTime();
@@ -133,20 +166,20 @@ class Simulator {
         }
     }
 
-        void simulate(double simDuration, double avgArrivalrate,
-                      double avgServiceTime) {
-            this.avgArrivalRate = avgArrivalrate;
-            this.avgServiceTime = avgServiceTime;
-            initState();
-            initTimeline();
+    void simulate(double simDuration, double avgArrivalrate,
+                  double avgServiceTime) {
+        this.avgArrivalRate = avgArrivalrate;
+        this.avgServiceTime = avgServiceTime;
+        initState();
+        initTimeline();
 
-            while (true) {
-                Event e = simTimeline.popNext();
-                time += e.getTimestamp();
+        while (true) {
+            Event e = simTimeline.popNext();
+            time += e.getTimestamp();
 
-                if (time >= simDuration)
-                    break;
-                executeEvent(e);
+            if (time >= simDuration)
+                break;
+            executeEvent(e);
         }
     }
 
@@ -157,5 +190,8 @@ class Simulator {
         double simTime = Double.parseDouble(args[0]);
         double avgArrivalRate = Double.parseDouble(args[1]);
         double avgServiceTime = Double.parseDouble(args[2]);
+
+        Simulator sim = new Simulator();
+        sim.simulate(simTime, avgArrivalRate, avgServiceTime);
     }
 }
