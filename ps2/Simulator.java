@@ -21,12 +21,24 @@ class Simulator {
         public void setFinishTime(double finishTime) {
             this.finishTime = finishTime;
         }
+
+        public double getArrivalTime() {
+            return arrivalTime;
+        }
+
+        public double getStartTime() {
+            return startTime;
+        }
+
+        public double getFinishTime() {
+            return finishTime;
+        }
     }
 
     class State {
         private int queueLength;
-        private double requestTime;
-        private double busyTime;
+        private double totalResponseTime;
+        private double totalBusyTime;
 
         private ArrayDeque<Request> requestQueue = new ArrayDeque<>();
 
@@ -34,13 +46,29 @@ class Simulator {
             requestQueue.add(r);
         }
 
-        void dispatchRequest() {
-            requestQueue.removeLast();
+        Request dispatchRequest() {
+            return requestQueue.poll();
         }
 
         public int getQueueLength() {
             queueLength = requestQueue.size();
             return queueLength;
+        }
+
+        public double getTotalResponseTime() {
+            return totalResponseTime;
+        }
+
+        public double getTotalBusyTime() {
+            return totalBusyTime;
+        }
+
+        public void setTotalResponseTime(double totalResponseTime) {
+            this.totalResponseTime = totalResponseTime;
+        }
+
+        public void setTotalBusyTime(double totalBusyTime) {
+            this.totalBusyTime = totalBusyTime;
         }
     }
 
@@ -49,7 +77,7 @@ class Simulator {
     private double avgArrivalRate;
     private double avgServiceTime;
 
-    double time = 0;
+    private double time = 0;
 
     //Has no real function as of now
     void initState() {
@@ -61,24 +89,47 @@ class Simulator {
         simTimeline.addToTimeline(new Event(MONITOR, 0.0));
     }
 
+    void updateStateVariables() {
+        // Updates queue length
+        simState.getQueueLength();
+    }
+
+    void updateStateVariablesUponDeath(double responseTime,
+                                       double busyTime) {
+        simState.setTotalResponseTime(simState.getTotalResponseTime() +
+                                      responseTime);
+        simState.setTotalBusyTime(simState.getTotalBusyTime() +
+                                  busyTime);
+    }
+
     void executeEvent(Event e) {
         switch (e.getType()) {
         case BIRTH:
             Request r = new Request();
             r.setArrivalTime(time);
+            simState.addRequest(r);
 
-            if (simState.getQueueLength() == 1) {
+            if (simState.getQueueLength() == 0) {
                 r.setStartTime(time);
-                simTimeline.addToTimeline(new Event(DEATH, time));
+                simTimeline.addToTimeline(new Event(DEATH, time +
+                                                    Exp.getExp(avgServiceTime)));
             }
             Event newBirth = new Event(BIRTH, time + Exp.getExp(avgArrivalRate));
-
             simTimeline.addToTimeline(newBirth);
-
-            // Assuming Monitor event will have same timestamp as previous birth
-            simTimeline.addToTimeline(new Event(MONITOR, newBirth.getTimestamp()));
+            break;
+        case MONITOR:
+            updateStateVariables();
+            simTimeline.addToTimeline(new Event(MONITOR, time +
+                                                Exp.getExp(avgArrivalRate)));
             break;
         case DEATH:
+            Request done = simState.dispatchRequest();
+            done.setFinishTime(time);
+
+            double responseTime = done.getFinishTime() - done.getArrivalTime();
+            double busyTime = done.getFinishTime() - done.getStartTime();
+            updateStateVariablesUponDeath(responseTime, busyTime);
+            break;
         }
     }
 
@@ -89,7 +140,6 @@ class Simulator {
             initState();
             initTimeline();
 
-            //add monitfdor when birth event
             while (true) {
                 Event e = simTimeline.popNext();
                 time += e.getTimestamp();
