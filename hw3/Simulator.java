@@ -1,5 +1,5 @@
-package hw2;
-import static hw2.Event.Type.*;
+package hw3;
+import static hw3.Event.Type.*;
 
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
@@ -64,7 +64,6 @@ class Request {
     public static void incrementCompletedRequests() {
         completedRequests++;
     }
-        
 }
 
 class Simulator {

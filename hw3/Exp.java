@@ -1,4 +1,4 @@
-package hw2;
+package hw3;
 
 class Exp {
     // Generate a random number following an exponential distribution

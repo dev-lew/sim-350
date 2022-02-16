@@ -1,4 +1,4 @@
-package hw2;
+package hw3;
 
 class Event {
     enum Type {
@@ -9,14 +9,9 @@ class Event {
     private double timestamp;
     private int eventID;
     private static int numEvents = 0;
-    private static int numMonitors = 0;
 
     Event(Type type, double timestamp) {
         this.type = type;
-
-        if (this.type == Event.Type.MONITOR)
-            ++numMonitors;
-
         this.timestamp = timestamp;
         eventID = numEvents++;
     }
@@ -25,15 +20,16 @@ class Event {
         return type;
     }
 
-    double getTimestamp() {
+    public double getTimestamp() {
         return timestamp;
     }
 
-    public static int getNumMonitors() {
-        return numMonitors;
-    }
 
     public int getEventID() {
         return eventID;
+    }
+
+    public static int getNumEvents() {
+        return numEvents;
     }
 }
