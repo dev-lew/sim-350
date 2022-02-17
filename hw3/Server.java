@@ -4,69 +4,7 @@ import static hw3.Event.Type.*;
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
 
-class Request {
-    private double arrivalTime;
-    private double startTime;
-    private double finishTime;
-    private int requestID;
-    private static int numCompletedMonitor = 0;
-    private static int numRequests = 0;
-    private static int completedRequests = 0;
-
-    Request() {
-        this.requestID = numRequests++;
-    }
-
-    public void setArrivalTime(double arrivalTime) {
-        this.arrivalTime = arrivalTime;
-    }
-
-    public void setStartTime(double startTime) {
-        this.startTime = startTime;
-    }
-
-    public void setFinishTime(double finishTime) {
-        this.finishTime = finishTime;
-    }
-
-    public static void setNumCompletedMonitor(int numCompletedMonitor) {
-        Request.numCompletedMonitor = numCompletedMonitor;
-    }
-
-    public double getArrivalTime() {
-        return arrivalTime;
-    }
-
-    public double getStartTime() {
-        return startTime;
-    }
-
-    public double getFinishTime() {
-        return finishTime;
-    }
-
-    public int getRequestID() {
-        return requestID;
-    }
-
-    public static int getNumRequests() {
-        return numRequests;
-    }
-
-    public static int getCompletedRequests() {
-        return completedRequests;
-    }
-
-    public static int getNumCompletedMonitor() {
-        return numCompletedMonitor;
-    }
-
-    public static void incrementCompletedRequests() {
-        completedRequests++;
-    }
-}
-
-class Simulator {
+class Server {
     class State {
         private int queueLength;
         private double totalResponseTime;
@@ -184,10 +122,42 @@ class Simulator {
         System.out.println("TRESP: " + fmt.format(avgResponseTime));
     }
 
+    Event generateBirth() {
+        return new Event(BIRTH, time +
+                         Exp.getExp(avgArrivalRate));
+    }
+
+    Event generateMonitor() {
+        return new Event(MONITOR, time +
+                         Exp.getExp(avgArrivalRate));
+    }
+
+    Event generateDeath() {
+        return new Event(DEATH, time +
+                         Exp.getExp(1 / avgServiceTime));
+    }
+
+    double computeResponseTime(Request r) {
+        fTime = r.getFinishTime();
+        aTime = r.getArrivalTime();
+
+        if (fTime <= 0 || aTime <= 0 || aTime >= fTime)
+            throw new IllegalArgumentException("Invalid request times");
+
+        return fTime - aTime;
+    }
+
+    double computeBusyTime(Request r) {
+        fTime = r.getFinishTime();
+        sTime = r.getStartTime();
+
+        if (fTime <= 0 || sTime <= 0 || sTime >= fTime)
+            throw new IllegalArgumentException("Invalid request times");
+
+        return fTime - sTime;
+    }
+
     void executeEvent(Event e) {
-        double prevTime = e.getTimestamp();
-        System.out.println("TS:" + Double.toString(prevTime) +
-                           "TIME:" + Double.toString(prevTime));
         switch (e.getType()) {
         case BIRTH:
             Request r = new Request();
@@ -198,68 +168,32 @@ class Simulator {
             if (simState.getQueueLength() <= 1) {
                 r.setStartTime(time);
                 printResult("START", r);
-                simTimeline.addToTimeline(new Event(DEATH, prevTime +
-                                                    Exp.getExp(1 / avgServiceTime)));
+                simTimeline.addToTimeline(generateDeath());
             }
 
-            Event newBirth = new Event(BIRTH, prevTime + Exp.getExp(avgArrivalRate));
-            simTimeline.addToTimeline(newBirth);
+            simTimeline.addToTimeline(generateBirth());
             break;
         case MONITOR:
             updateStateVariables();
-            simTimeline.addToTimeline(new Event(MONITOR, prevTime +
-                                                Exp.getExp(avgArrivalRate)));
+            simTimeline.addToTimeline(generateMonitor());
             break;
         case DEATH:
             Request done = simState.dispatchRequest();
             done.setFinishTime(time);
             printResult("DONE", done);
 
-            double responseTime = done.getFinishTime() - done.getArrivalTime();
-            double busyTime = done.getFinishTime() - done.getStartTime();
-            updateStateVariablesUponDeath(responseTime, busyTime);
+            double rT = computeResponseTime(done);
+            double bT = computeBusyTime(done);
+            updateStateVariablesUponDeath(rT, bT);
 
             if (simState.getQueueLength() > 0) {
                 Request head = simState.queuePeek();
                 // Begin Processing
                 head.setStartTime(time);
                 printResult("START", head);
-                simTimeline.addToTimeline(new Event(DEATH, prevTime + Exp.getExp(1 / avgServiceTime)));
+                simTimeline.addToTimeline(generateDeath());
             }
             break;
         }
-    }
-
-    void simulate(double simDuration, double avgArrivalrate,
-                  double avgServiceTime) {
-        this.avgArrivalRate = avgArrivalrate;
-        this.avgServiceTime = avgServiceTime;
-        this.simDuration = simDuration;
-        initState();
-        initTimeline();
-
-        while (true) {
-            Event e = simTimeline.popNext();
-            time = e.getTimestamp();
-
-            if (time >= simDuration)
-                break;
-            executeEvent(e);
-        }
-
-        printStats();
-    }
-
-    public static void main(String[] args) {
-        if (args.length != 3)
-            throw new IllegalArgumentException("Invalid number of arguments");
-
-        double simTime = Double.parseDouble(args[0]);
-        double avgArrivalRate = Double.parseDouble(args[1]);
-        double avgServiceTime = Double.parseDouble(args[2]);
-
-        Simulator sim = new Simulator();
-        sim.simulate(simTime, avgArrivalRate, avgServiceTime);
-
     }
 }
