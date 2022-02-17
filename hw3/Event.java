@@ -8,12 +8,20 @@ class Event {
     private Type type;
     private double timestamp;
     private int eventID;
+    private String targetServer;
     private static int numEvents = 0;
 
     Event(Type type, double timestamp) {
         this.type = type;
         this.timestamp = timestamp;
         eventID = numEvents++;
+    }
+
+    Event(Type type, double timestamp, String targetServer) {
+        this.type = type;
+        this.timestamp = timestamp;
+        this.eventID = numEvents++;
+        this.targetServer = targetServer;
     }
 
     Type getType() {
@@ -24,12 +32,15 @@ class Event {
         return timestamp;
     }
 
-
     public int getEventID() {
         return eventID;
     }
 
     public static int getNumEvents() {
         return numEvents;
+    }
+
+    public String getTargetServer() {
+        return targetServer;
     }
 }

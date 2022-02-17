@@ -21,37 +21,8 @@ class Server {
             return requestQueue.poll();
         }
 
-        Request queuePeek() {
+        Request peek() {
             return requestQueue.peek();
-        }
-
-        public int getQueueLength() {
-            queueLength = requestQueue.size();
-            return queueLength;
-        }
-
-        public double getTotalResponseTime() {
-            return totalResponseTime;
-        }
-
-        public double getTotalBusyTime() {
-            return totalBusyTime;
-        }
-
-        public int getTotalQueueLength() {
-            return totalQueueLength;
-        }
-
-        public void setTotalResponseTime(double totalResponseTime) {
-            this.totalResponseTime = totalResponseTime;
-        }
-
-        public void setTotalBusyTime(double totalBusyTime) {
-            this.totalBusyTime = totalBusyTime;
-        }
-
-        public void setTotalQueueLength(int totalQueueLength) {
-            this.totalQueueLength = totalQueueLength;
         }
     }
 
@@ -63,57 +34,52 @@ class Server {
 
     private double time = 0;
 
-    //Has no real function as of now
-    void initState() {
-        simState = new State();
-    }
-
-    void initTimeline() {
-        simTimeline = new Timeline();
-        simTimeline.addToTimeline(new Event(BIRTH, 0.0));
-        simTimeline.addToTimeline(new Event(MONITOR, 0.0));
+    Server(double avgServiceTime) {
+        this.avgServiceTime = avgServiceTime;
     }
 
     void updateStateVariables() {
         // Updates queue length
-        simState.setTotalQueueLength(simState.getTotalQueueLength() +
-                                     simState.getQueueLength());
-        Request.setNumCompletedMonitor(Request.getNumCompletedMonitor() + 1);
+        simState.totalQueueLength += simState.getQueueLength();
+
+        // TODO: Keep track of monitors
     }
 
     void updateStateVariablesUponDeath(double responseTime,
                                        double busyTime) {
-        simState.setTotalResponseTime(simState.getTotalResponseTime() +
-                                      responseTime);
-        simState.setTotalBusyTime(simState.getTotalBusyTime() +
-                                  busyTime);
+        simState.totalResponseTime += responseTime;
+        simState.totalBusyTime += busyTime;
         Request.incrementCompletedRequests();
     }
 
     void printResult(String type, Request r) {
         double timestamp;
 
-        if (type.equals("ARR")) {
+        switch(type) {
+        case "ARR":
             timestamp = r.getArrivalTime();
-        } else if (type.equals("START")) {
+            break;
+        case "START":
             timestamp = r.getStartTime();
-        } else if (type.equals("DONE")) {
+            break;
+        case "DONE":
             timestamp = r.getFinishTime();
-        } else {
+            break;
+        default:
             String error = "Error when processing request.";
             throw new IllegalArgumentException(error);
         }
+
         DecimalFormat fmt = new DecimalFormat("#.000");
         System.out.println("R" + Integer.toString(r.getRequestID()) +
                            " " + type + ": " + fmt.format(timestamp));
     }
 
     void printStats() {
-        double utilization = simState.getTotalBusyTime() / time;
-        // double avgQueueLength = simState.getTotalQueueLength() / Request.getNumCompletedMonitor();
-        // We do a little M/M/1 calculation
-        double avgQueueLength = utilization / (1 - utilization);
-        double avgResponseTime = simState.getTotalResponseTime() /
+        double utilization = simState.totalBusyTime() / time;
+        double avgQueueLength = simState.totalQueueLength() /
+            Request.getNumCompletedMonitor();
+        double avgResponseTime = simState.totalResponseTime() /
             Request.getCompletedRequests();
 
         DecimalFormat fmt = new DecimalFormat("#.000");
@@ -187,7 +153,7 @@ class Server {
             updateStateVariablesUponDeath(rT, bT);
 
             if (simState.getQueueLength() > 0) {
-                Request head = simState.queuePeek();
+                Request head = simState.peek();
                 // Begin Processing
                 head.setStartTime(time);
                 printResult("START", head);
