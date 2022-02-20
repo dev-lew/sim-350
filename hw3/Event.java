@@ -1,5 +1,7 @@
 package hw3;
 
+import java.util.Optional;
+
 class Event {
     enum Type {
         BIRTH, DEATH, MONITOR
@@ -10,24 +12,27 @@ class Event {
     private int eventID;
     // May be necessary later
     private String targetServer;
-    // Associate each Event with a request
-    private Request r;
+    /* An event may have a request associated with it
+       If it does, then the request has come from another
+       server.
+    */
+    private Request request = null;
     private static int numEvents = 0;
 
-    Event(Type type, double timestamp, Request r) {
+    Event(Type type, double timestamp) {
         this.type = type;
         this.timestamp = timestamp;
-        this.r = r;
         eventID = numEvents++;
     }
 
-    Event(Type type, double timestamp, String targetServer) {
+    Event (Type type, double timestamp, Request r) {
         this.type = type;
         this.timestamp = timestamp;
-        this.r = r;
-        this.eventID = numEvents++;
-        this.targetServer = targetServer;
+        this.request = r;
+        eventID = numEvents++;
+        
     }
+
 
     Type getType() {
         return type;
@@ -43,6 +48,10 @@ class Event {
 
     public static int getNumEvents() {
         return numEvents;
+    }
+
+    public Request getRequest() {
+        return request;
     }
 
     public String getTargetServer() {

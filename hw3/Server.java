@@ -3,9 +3,9 @@ import static hw3.Event.Type.*;
 
 import java.text.DecimalFormat;
 import java.util.ArrayDeque;
-import java.util.Optional;
 
 class Server {
+    // State of the queue, response, and busy times
     class State {
         private int queueLength;
         private double totalResponseTime;
@@ -25,15 +25,16 @@ class Server {
         Request peek() {
             return requestQueue.peek();
         }
+
+
     }
 
     // Consider only integer based server names for now
     private int name;
-    private State simState;
-    private Timeline simTimeline;
+    private State serverState;
+    private Timeline eventTimeline;
     private double avgArrivalRate;
     private double avgServiceTime;
-    private double simDuration;
     private int numMonitors = 0;
     private double time = 0;
 
@@ -44,13 +45,13 @@ class Server {
 
     void updateStateVariables() {
         // Updates queue length
-        simState.totalQueueLength += simState.getQueueLength();
+        serverState.totalQueueLength += serverState.getQueueLength();
     }
 
     void updateStateVariablesUponDeath(double responseTime,
                                        double busyTime) {
-        simState.totalResponseTime += responseTime;
-        simState.totalBusyTime += busyTime;
+        serverState.totalResponseTime += responseTime;
+        serverState.totalBusyTime += busyTime;
         Request.incrementCompletedRequests();
     }
 
@@ -78,10 +79,10 @@ class Server {
     }
 
     void printStats() {
-        double utilization = simState.totalBusyTime() / time;
-        double avgQueueLength = simState.totalQueueLength() /
+        double utilization = serverState.totalBusyTime() / time;
+        double avgQueueLength = serverState.totalQueueLength() /
             Request.getNumCompletedMonitor();
-        double avgResponseTime = simState.totalResponseTime() /
+        double avgResponseTime = serverState.totalResponseTime() /
             Request.getCompletedRequests();
 
         DecimalFormat fmt = new DecimalFormat("#.000");
@@ -106,6 +107,11 @@ class Server {
                          Exp.getExp(1 / avgServiceTime));
     }
 
+    // Used by the router
+    void generateBirthAndAddToTimeline() {
+        eventTimeline.addToTimeline(generateBirth());
+    }
+
     double computeResponseTime(Request r) {
         fTime = r.getFinishTime();
         aTime = r.getArrivalTime();
@@ -128,29 +134,29 @@ class Server {
 
     // If the server is in a pipeline, it may need to generate (return)
     // an event at a different server
-    Optional<Event> executeEvent(Event e) {
+    Event executeEvent(Event e) {
         // If the Optional is empty, there is nothing to execute
         switch (e.getType()) {
         case BIRTH:
             Request r = new Request();
             r.setArrivalTime(time);
             printResult("ARR", r);
-            simState.addRequest(r);
+            serverState.addRequest(r);
 
-            if (simState.getQueueLength() <= 1) {
+            if (serverState.getQueueLength() <= 1) {
                 r.setStartTime(time);
                 printResult("START", r);
-                simTimeline.addToTimeline(generateDeath());
+                eventTimeline.addToTimeline(generateDeath());
             }
 
-            simTimeline.addToTimeline(generateBirth());
+            eventTimeline.addToTimeline(generateBirth());
             break;
         case MONITOR:
             updateStateVariables();
-            simTimeline.addToTimeline(generateMonitor());
+            eventTimeline.addToTimeline(generateMonitor());
             break;
         case DEATH:
-            Request done = simState.dispatchRequest();
+            Request done = serverState.dispatchRequest();
             done.setFinishTime(time);
             printResult("DONE", done);
 
@@ -158,21 +164,14 @@ class Server {
             double bT = computeBusyTime(done);
             updateStateVariablesUponDeath(rT, bT);
 
-            if (simState.getQueueLength() > 0) {
-                Request head = simState.peek();
+            if (serverState.getQueueLength() > 0) {
+                Request head = serverState.peek();
                 // Begin Processing
                 head.setStartTime(time);
                 printResult("START", head);
-                simTimeline.addToTimeline(generateDeath());
+                eventTimeline.addToTimeline(generateDeath());
             }
-
-            // Pass event to next server (if there is one)
-            Event nextServerEvent = generateBirth();
-            simTimeline.addToTimeline(nextServerEvent);
-            return Optional.of(nextServerEvent);
-
             break;
         }
-        return Optional.empty();
     }
 }

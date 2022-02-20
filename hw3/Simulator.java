@@ -5,6 +5,40 @@ import java.text.DecimalFormat;
 import java.util.ArrayDeque;
 
 class Simulator {
+    class Router {
+        /*
+          The map describes with what probability a given
+          request exiting the server will go elsewhere
+          The server will have to provide its own request timeline
+         */
+        private HashMap<Server, Double> routingMap =
+                new HashMap<>();
+
+        private addRoute(Server s, double p) {
+            this.routingMap.put(s, Double(p));
+        }
+
+        // Send request from event e with probability defined in map
+        private void send(Event e, Server source, Server dest) {
+            assertNotNull("Server not in router",
+                          this.routingMap.get(source));
+
+            double prob = this.routingMap.get(source);
+            Random roll = (new Random()).nextDouble();
+            Request r = e.getRequest();
+
+            if (!r)
+                throw new IllegalArgumentException("Bad event with no request");
+
+            if (roll <= prob) {
+                System.out.println(Integer.toString(r.getRequestID()) +
+                                   "NEXT " + Integer.toString(dest.getName()) +
+                                   ":" + Double.toString(e.getTimestamp()));
+
+                dest.generateBirthAndAddToTimeline();
+            }
+        }
+    }
     private double time = 0;
 
     void printStats() {
@@ -23,13 +57,6 @@ class Simulator {
 
             if (time >= simDuration)
                 break;
-
-            // executeEvent() may generate a birth for the secondary server
-            Optional<Event> passedEvent;
-
-            if ((passedEvent = primary.executeEvent(e)).isPresent())
-                secondary.executeEvent(passedEvent.get());
-
         }
 
         printStats();
