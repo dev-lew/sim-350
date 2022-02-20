@@ -8,18 +8,23 @@ class Event {
     private Type type;
     private double timestamp;
     private int eventID;
+    // May be necessary later
     private String targetServer;
+    // Associate each Event with a request
+    private Request r;
     private static int numEvents = 0;
 
-    Event(Type type, double timestamp) {
+    Event(Type type, double timestamp, Request r) {
         this.type = type;
         this.timestamp = timestamp;
+        this.r = r;
         eventID = numEvents++;
     }
 
     Event(Type type, double timestamp, String targetServer) {
         this.type = type;
         this.timestamp = timestamp;
+        this.r = r;
         this.eventID = numEvents++;
         this.targetServer = targetServer;
     }
