@@ -1,10 +1,8 @@
 package hw3;
 
-import java.util.Optional;
-
 class Event {
     enum Type {
-        BIRTH, DEATH, MONITOR
+        BIRTH, DEATH, DEATH2, MONITOR
     }
 
     private Type type;
@@ -30,7 +28,6 @@ class Event {
         this.timestamp = timestamp;
         this.request = r;
         eventID = numEvents++;
-        
     }
 
 
@@ -57,4 +54,19 @@ class Event {
     public String getTargetServer() {
         return targetServer;
     }
+
+    public void setRequest(Request request) {
+        this.request = request;
+    }
+
+    @Override
+    public String toString() {
+        return "Event [eventID=" + eventID + ", request=" + request +
+            ", targetServer=" + targetServer + ", timestamp=" +
+                 timestamp + ", type=" + type + "]";
+    }
+
+    
+
+
 }

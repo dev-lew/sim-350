@@ -1,3 +1,5 @@
+package hw3;
+
 class Request {
     private double arrivalTime;
     private double startTime;
@@ -39,5 +41,11 @@ class Request {
 
     public static int getNumRequests() {
         return numRequests;
+    }
+
+    @Override
+    public String toString() {
+        return "Request [arrivalTime=" + arrivalTime + ", finishTime=" +
+            finishTime + ", requestID=" + requestID + ", startTime=" + startTime + "]";
     }
 }
