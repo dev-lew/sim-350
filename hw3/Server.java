@@ -49,7 +49,7 @@ class Server {
     private Timeline eventTimeline;
     private double avgArrivalRate;
     private double avgServiceTime;
-    private int numMonitors = 0;
+    private int numMonitors = 1;
     private double time = 0;
     private static int numServers = 0;
 
@@ -107,17 +107,23 @@ class Server {
         System.out.println("R" + Integer.toString(r.getRequestID()) + " DONE " + this.name + ": "
                 + fmt.format(e.getTimestamp()));
     }
-    void printStats() {
+
+    double[] buildStats() {
+        System.out.println("Completed Requests: " + this.serverState.completedRequests);
+        System.out.println(time);
+        System.out.println(this.numMonitors);
         double utilization = serverState.totalBusyTime / time;
         double avgQueueLength = serverState.totalQueueLength /
                 this.numMonitors;
         double avgResponseTime = serverState.totalResponseTime /
                 this.serverState.completedRequests;
 
-        DecimalFormat fmt = new DecimalFormat("#.000");
-        System.out.println("UTIL: " + fmt.format(utilization));
-        System.out.println("QLEN: " + fmt.format(avgQueueLength));
-        System.out.println("TRESP: " + fmt.format(avgResponseTime));
+        // DecimalFormat fmt = new DecimalFormat("#.000");
+        // System.out.println("UTIL: " + fmt.format(utilization));
+        // System.out.println("QLEN: " + fmt.format(avgQueueLength));
+        // System.out.println("TRESP: " + fmt.format(avgResponseTime));
+        double[] stats = { utilization, avgQueueLength };
+        return stats;
     }
 
     // All generators take in their previous event to
@@ -130,7 +136,6 @@ class Server {
 
     Event generateMonitor(Event e) {
         double time = e.getTimestamp();
-        numMonitors++;
         return new Event(MONITOR, time +
                          Exp.getExp(avgArrivalRate));
     }
@@ -202,6 +207,7 @@ class Server {
     }
 
     void executeMonitor(Event e) {
+        this.numMonitors++;
         updateStateVariables();
         eventTimeline.addToTimeline(generateMonitor(e));
     }
@@ -223,6 +229,7 @@ class Server {
         double bT = computeBusyTime(done);
         updateStateVariablesUponDeath(rT, bT);
 
+        // TODO: Here we can print START before next
         if (serverState.getQueueLength() > 0) {
             Request head = serverState.peek();
             // Begin Processing
@@ -260,12 +267,17 @@ class Server {
     // When a request is added to current server request queue
     void executeRequest(Event e) {
         time = e.getTimestamp();
+        serverState.completedRequests++;
+
         if (serverState.getQueueLength() == 1) {
             Request head = serverState.peek();
             // Begin Processing
             head.setStartTime(time);
             printResult("START", head);
-            eventTimeline.addToTimeline(generateDeath2(e));
+            if (this.name == 0)
+                eventTimeline.addToTimeline(generateDeath(e));
+            else
+                eventTimeline.addToTimeline(generateDeath2(e));
         }
 
     }
@@ -273,6 +285,7 @@ class Server {
     Event processEvent(Event e) {
         Event ret = null;
         time = e.getTimestamp();
+        System.out.println(e);
 
         switch (e.getType()) {
         case BIRTH:

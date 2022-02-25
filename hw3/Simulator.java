@@ -44,7 +44,22 @@ class Simulator {
     private double time = 0;
     private Timeline simTimeline = new Timeline();
 
-    void printStats() {
+    void printStats(Server s, Server t) {
+        double[] sStats = s.buildStats();
+        double sUtil = sStats[0];
+        double sQLen = sStats[1];
+
+        double[] tStats = t.buildStats();
+        double tUtil = tStats[0];
+        double tQLen = tStats[1];
+
+        DecimalFormat fmt = new DecimalFormat("#.000");
+        System.out.println("UTIL 0: " + fmt.format(sUtil));
+        System.out.println("UTIL 1: " + fmt.format(tUtil));
+        System.out.println("QLEN 0: " + fmt.format(sQLen));
+        System.out.println("QLEN 1: " + fmt.format(tQLen));
+
+
     }
 
     void printNext(Event e, Server s) {
@@ -70,14 +85,15 @@ class Simulator {
 
     void simulate(double simDuration, double avgArrivalrate,
                   double avgServiceTimePrimary,
-                  double avgServiceTimeSecondary) {
+                  double avgServiceTimeSecondary,
+                  double probPrimExit, double probSecondReturn) {
         Server primary = new Server(avgServiceTimePrimary,
                                     avgArrivalrate, simTimeline);
         Server secondary = new Server(avgServiceTimeSecondary,
                                       avgArrivalrate, simTimeline);
         Router primSecondary = new Router();
-        primSecondary.addRoute(primary, 1.0);
-        primSecondary.addRoute(secondary, 1.0);
+        primSecondary.addRoute(primary, 1 - probPrimExit);
+        primSecondary.addRoute(secondary, probSecondReturn);
 
         initTimeline();
 
@@ -97,26 +113,35 @@ class Simulator {
             Event ret =  primary.processEvent(e);
             // If the event is a death, ret will be non-null
             if  (ret != null) {
-                primSecondary.send(ret, primary, secondary);
-                primSecondary.send(ret, secondary, null);
+                if (!primSecondary.send(ret, primary, secondary)) {
+                    // Exit server
+                    primSecondary.send(ret, primary, null);
+                };
+                if (!primSecondary.send(ret, secondary, primary)) {
+                    // Exit server
+                    primSecondary.send(ret, secondary, null);
+                };
             }
         }
 
-        printStats();
+        printStats(primary, secondary);
     }
 
     public static void main(String[] args) {
-        if (args.length != 4)
+        if (args.length != 6)
             throw new IllegalArgumentException("Invalid number of arguments");
 
         double simTime = Double.parseDouble(args[0]);
         double avgArrivalRate = Double.parseDouble(args[1]);
         double avgServiceTimePrim = Double.parseDouble(args[2]);
         double avgServiceTimeSec = Double.parseDouble(args[3]);
+        double probPrimExit = Double.parseDouble(args[4]);
+        double probSecondReturn = Double.parseDouble(args[5]);
+
 
         Simulator sim = new Simulator();
         sim.simulate(simTime, avgArrivalRate, avgServiceTimePrim,
-                     avgServiceTimeSec);
+                     avgServiceTimeSec, probPrimExit, probSecondReturn);
 
     }
 }
