@@ -1,46 +1,14 @@
 package hw3;
 import static hw3.Event.Type.*;
 
-import java.util.HashMap;
-import java.util.Random;
+
+import hw3.Server.State;
+
 import java.text.DecimalFormat;
 
+//TODO: Change send to update target server
+// refactor process event
 class Simulator {
-    class Router {
-        /*
-          The map describes with what probability a given
-          request exiting the server will go elsewhere
-          The server will have to provide its own request timeline
-         */
-        private HashMap<Server, Double> routingMap =
-                new HashMap<>();
-
-        private void addRoute(Server s, double p) {
-            this.routingMap.put(s, p);
-        }
-
-        // Send request from event e with probability defined in map
-        private boolean send(Event e, Server source, Server dest) {
-            double prob = this.routingMap.get(source);
-            double roll = (new Random()).nextDouble();
-            Request r = e.getRequest();
-
-            if (r == null)
-                throw new IllegalArgumentException("Bad event with no request");
-
-            if (roll <= prob) {
-                // If dest is null, we leave the system
-                if (dest == null) {
-                    return true;
-                }
-                printNext(e, dest);
-                dest.getServerState().addRequest(r);
-                dest.executeRequest(e);
-                return true;
-            }
-            return false;
-        }
-    }
     private double time = 0;
     private Timeline simTimeline = new Timeline();
 
@@ -53,11 +21,17 @@ class Simulator {
         double tUtil = tStats[0];
         double tQLen = tStats[1];
 
+        double tresp = Request.getTotalResponseTime() / State.getCompletedRequests();
+        double twait = Request.getTotalWaitingTime() / State.getCompletedRequests();
+
         DecimalFormat fmt = new DecimalFormat("#.000");
         System.out.println("UTIL 0: " + fmt.format(sUtil));
         System.out.println("UTIL 1: " + fmt.format(tUtil));
         System.out.println("QLEN 0: " + fmt.format(sQLen));
         System.out.println("QLEN 1: " + fmt.format(tQLen));
+        System.out.println("TRESP: " +  tresp);
+        System.out.println("TWAIT: " + twait);
+
 
 
     }
@@ -79,8 +53,36 @@ class Simulator {
     }
 
     void initTimeline() {
-        simTimeline.addToTimeline(new Event(BIRTH, 0.0));
-        simTimeline.addToTimeline(new Event (MONITOR, 0.0));
+        simTimeline.addToTimeline(new Event(BIRTH, 0.0, 0));
+        simTimeline.addToTimeline(new Event (MONITOR, 0.0, 0));
+    }
+
+    Event delegate(Event e, Server p, Server s) {
+        Event ret = null;
+        if (e.getType() == MONITOR) {
+            executeMonitor(p, s, e);
+            return ret;
+        }
+        switch (e.getTargetServer()) {
+        case 0:
+            ret = p.processEvent(e);
+            break;
+        case 1:
+            ret = s.processEvent(e);
+            break;
+        default:
+            throw new IllegalArgumentException("Error in delegate");
+
+        }
+        return ret;
+
+    }
+
+    void executeMonitor(Server s, Server t, Event e) {
+        s.updateStateVariables();
+        t.updateStateVariables();
+        Server.incrementNumMonitors();
+        s.generateMonitor(e);
     }
 
     void simulate(double simDuration, double avgArrivalrate,
@@ -91,9 +93,14 @@ class Simulator {
                                     avgArrivalrate, simTimeline);
         Server secondary = new Server(avgServiceTimeSecondary,
                                       avgArrivalrate, simTimeline);
-        Router primSecondary = new Router();
-        primSecondary.addRoute(primary, 1 - probPrimExit);
-        primSecondary.addRoute(secondary, probSecondReturn);
+        Router primaryR = new Router();
+        Router secR = new Router();
+
+        primaryR.addRoute(secondary, 1 - probPrimExit);
+        secR.addRoute(primary, probSecondReturn);
+
+        primary.setRouter(primaryR);
+        secondary.setRouter(secR);
 
         initTimeline();
 
@@ -105,23 +112,21 @@ class Simulator {
             if (time >= simDuration)
                 break;
 
-            if (e.getType() == DEATH2) {
-                secondary.processEvent(e);
-                continue;
-            }
+            delegate(e, primary, secondary);
 
-            Event ret =  primary.processEvent(e);
-            // If the event is a death, ret will be non-null
-            if  (ret != null) {
-                if (!primSecondary.send(ret, primary, secondary)) {
-                    // Exit server
-                    primSecondary.send(ret, primary, null);
-                };
-                if (!primSecondary.send(ret, secondary, primary)) {
-                    // Exit server
-                    primSecondary.send(ret, secondary, null);
-                };
-            }
+            // // If the event is a death, ret will be non-null
+            // if  (ret != null) {
+            //     if (!primSecondary.send(ret, primary, secondary)) {
+            //         // Exit server
+            //         printDone(e, primary);
+            //         primSecondary.send(ret, primary, null);
+            //     }
+            //     if (!primSecondary.send(ret, secondary, primary)) {
+            //         // Exit server
+            //         printDone(e, secondary);
+            //         primSecondary.send(ret, secondary, null);
+            //     }
+            // }
         }
 
         printStats(primary, secondary);

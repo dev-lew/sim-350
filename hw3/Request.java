@@ -6,6 +6,8 @@ class Request {
     private double finishTime;
     private int requestID;
     private static int numRequests = 0;
+    private static double totalResponseTime = 0;
+    private static double totalWaitingTime = 0;
 
     Request() {
         this.requestID = numRequests++;
@@ -41,6 +43,22 @@ class Request {
 
     public static int getNumRequests() {
         return numRequests;
+    }
+
+    public static double getTotalResponseTime() {
+        return totalResponseTime;
+    }
+
+    public static double getTotalWaitingTime() {
+        return totalWaitingTime;
+    }
+
+    public static void incrementTotalResponseTime(double t) {
+        totalResponseTime += t;
+    }
+
+    public static void incrementTotalWaitingTime(double t) {
+        totalWaitingTime = t;
     }
 
     @Override

@@ -9,7 +9,7 @@ class Event {
     private double timestamp;
     private int eventID;
     // May be necessary later
-    private String targetServer;
+    private int targetServer;
     /* An event may have a request associated with it
        If it does, then the request has come from another
        server.
@@ -17,16 +17,20 @@ class Event {
     private Request request = null;
     private static int numEvents = 0;
 
-    Event(Type type, double timestamp) {
+    Event(Type type, double timestamp, int targetServer) {
         this.type = type;
         this.timestamp = timestamp;
+        this.targetServer = targetServer;
         eventID = numEvents++;
     }
 
-    Event (Type type, double timestamp, Request r) {
+    //TODO: Add target server for process event
+    // This will allow for better flow in simulate
+    Event (Type type, double timestamp, Request r, int targetServer) {
         this.type = type;
         this.timestamp = timestamp;
         this.request = r;
+        this.targetServer = targetServer;
         eventID = numEvents++;
     }
 
@@ -51,12 +55,16 @@ class Event {
         return request;
     }
 
-    public String getTargetServer() {
+    public int getTargetServer() {
         return targetServer;
     }
 
     public void setRequest(Request request) {
         this.request = request;
+    }
+
+    public void setTargetServer(int targetServer) {
+        this.targetServer = targetServer;
     }
 
     @Override
@@ -65,8 +73,5 @@ class Event {
             ", targetServer=" + targetServer + ", timestamp=" +
                  timestamp + ", type=" + type + "]";
     }
-
-    
-
 
 }
