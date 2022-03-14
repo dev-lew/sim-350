@@ -17,7 +17,10 @@ class SimpleServer extends EventGenerator {
     public LinkedList<Request> theQueue = new LinkedList<Request>();
     public Double servTime;
     public String name = null;
-    
+
+    // For general service distributions
+    public HashMap<Double, Double> dist = null;
+
     /* Statistics of this server --- to construct rolling averages */
     public Double cumulQ = new Double(0);
     public Double cumulW = new Double(0);
@@ -26,13 +29,23 @@ class SimpleServer extends EventGenerator {
     public Double busyTime = new Double(0);
     public int snapCount = 0;
     public int servedReqs = 0;
-    
+
     public SimpleServer (Timeline timeline, Double servTime) {
         super(timeline);
 
         /* Initialize the average service time of this server */
         this.servTime = servTime;
     }
+
+    /*
+      Used when service time follows a general distribution
+      servTime is calculated for each request
+    */
+    public SimpleServer(Timeline timeline, HashMap<Double,Double> dist) {
+        super(timeline);
+        this.dist = dist;
+    }
+
 
     // Used for subclasses
     EventGenerator getNext() {
@@ -61,7 +74,42 @@ class SimpleServer extends EventGenerator {
 	    
         super.timeline.addEvent(nextEvent);	    	
     }
-    
+
+    /* Overridden method for when the server has a service time that follows
+       a general distribution.
+
+       dist is a HashMap that holds (service time, probability of service time)
+       pairs
+    */
+    public void __startService(Event evt, Request curRequest,
+                               HashMap<Double, Double> dist) {
+
+        Double roll = Math.random();
+        Double cumP = 0.0;
+
+        // Calculate service time based on the distribution
+        for (Map.Entry<Double, Double> entry : dist.entrySet()) {
+            cumP += entry.getValue();
+
+            if (roll < cumP) {
+                this.servTime = entry.getKey();
+                break;
+            }
+        }
+
+        Event nextEvent = new Event(EventType.DEATH, curRequest,
+                                    evt.getTimestamp() + servTime, this);
+
+        curRequest.recordServiceStart(evt.getTimestamp());
+        cumulTw += curRequest.getServiceStart() - curRequest.getArrival();
+
+        /* Print the occurrence of this event */
+        System.out.println(curRequest + " START" + (this.name != null ? " " + this.name : "") +
+                           ": " + evt.getTimestamp());
+
+        super.timeline.addEvent(nextEvent);
+    }
+
     @Override
     void receiveRequest(Event evt) {
         super.receiveRequest(evt);
@@ -73,10 +121,13 @@ class SimpleServer extends EventGenerator {
         /* Upon receiving the request, check the queue size and act
          * accordingly */
         if(theQueue.isEmpty()) {
-            __startService(evt, curRequest);
+            if (dist == null)
+                __startService(evt, curRequest);
+            else
+                __startService(evt, curRequest, dist);
         }
-	    
-        theQueue.add(curRequest);	
+
+        theQueue.add(curRequest);
     }
 
     @Override
@@ -108,7 +159,10 @@ class SimpleServer extends EventGenerator {
         if(!theQueue.isEmpty()) {
             Request nextRequest = theQueue.peekFirst();
 
-            __startService(evt, nextRequest);	    
+            if (dist == null)
+                __startService(evt, nextRequest);
+            else
+                __startService(evt, nextRequest, dist);
         }
 	
     }
@@ -132,8 +186,9 @@ class SimpleServer extends EventGenerator {
             System.out.println("QLEN: " + cumulQ/snapCount);
             System.out.println("TRESP: " + cumulTq/servedReqs);
         } else {
-            System.out.println("UTIL " + this.name + ": " + busyTime/time);
-            System.out.println("QLEN " + this.name + ": " + cumulQ/snapCount);
+            System.out.println(this.name + "UTIL " + ": " + busyTime/time);
+            System.out.println(this.name + "QLEN " + ": " + cumulQ/snapCount);
+            System.out.println(this.name + "TRESP: " + cumulTq / servedReqs);
         }
     }
 

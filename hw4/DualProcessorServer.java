@@ -30,9 +30,8 @@ class DualProcessorServer extends SimpleServer {
     void releaseRequest(Event evt) {
         Request curRequest = evt.getRequest();
 
-        Request queueHead = theQueue.removeFirst();
-
-        assert curRequest == queueHead;
+        // We may remove the penultimate member of the queue
+        assert theQueue.remove(curRequest);
 
         curRequest.recordDeparture(evt.getTimestamp());
 
