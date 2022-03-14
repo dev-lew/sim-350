@@ -45,32 +45,32 @@ class RoutingNode extends EventGenerator {
 
     @Override
     void receiveRequest(Event evt) {
-	Request curRequest = evt.getRequest();
+        Request curRequest = evt.getRequest();
 
-	/* Find out where to route to with a dice roll */
-	Double dice = Math.random();
+        /* Find out where to route to with a dice roll */
+        Double dice = Math.random();
 
-	/* Identify the destination with CDF calculation */
-	Double cumulP = new Double(0);
+        /* Identify the destination with CDF calculation */
+        Double cumulP = new Double(0);
 
-	EventGenerator nextHop = null;
+        EventGenerator nextHop = null;
 
-	for(Map.Entry<EventGenerator, Double> entry : routingTable.entrySet()) {
-	    cumulP += entry.getValue();
+        for(Map.Entry<EventGenerator, Double> entry : routingTable.entrySet()) {
+            cumulP += entry.getValue();
 
-	    if (dice < cumulP) {
-		nextHop = entry.getKey();
-		break;
-	    }
-	}
+            if (dice < cumulP) {
+                nextHop = entry.getKey();
+                break;
+            }
+        }
 
-	/* Print the occurrence of this event */
-	if (!nextHop.toString().equals(""))
-	    System.out.println(evt.getRequest() + " NEXT " + nextHop  + ": " + evt.getTimestamp());
+        /* Print the occurrence of this event */
+        if (!nextHop.toString().equals(""))
+            System.out.println(evt.getRequest() + " NEXT " + nextHop  + ": " + evt.getTimestamp());
 	
-	assert nextHop != null;
+        assert nextHop != null;
 
-	nextHop.receiveRequest(evt);
+        nextHop.receiveRequest(evt);
     }
 }
 

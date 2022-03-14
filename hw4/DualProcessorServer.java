@@ -1,78 +1,70 @@
 package hw4;
 
-class DualProcessorServer extends SimpleServer {
-    private int reqsProcessing = 0;
+import java.util.LinkedList;
 
-    public DualProcessorServer(Timeline timeline, Double servTime) {
+class DualProcessorServer extends SimpleServer {
+    public boolean isBusy = false;
+
+    /* The queue is now shared */
+    public DualProcessorServer(Timeline timeline, Double servTime,
+                               LinkedList<Request> theQueue) {
         super(timeline, servTime);
+        this.theQueue = theQueue;
     }
 
-    @Override
-    void receiveRequest(Event evt) {
-        // Shadow EventGenerator
-        Request r = evt.getRequest();
-        r.moveTo(this);
+    public void __startService(Event evt, Request curRequest) {
+        this.isBusy = true;
+        Event nextEvent = new Event(EventType.DEATH, curRequest, evt.getTimestamp() + Exp.getExp(1 / this.servTime),
+                this);
 
-        r.recordArrival(evt.getTimestamp());
+        curRequest.recordServiceStart(evt.getTimestamp());
+        cumulTw += curRequest.getServiceStart() - curRequest.getArrival();
 
-        // With two processors, the queue can have at most 1 request processing
-        if (this.theQueue.size() <= 1) {
-            reqsProcessing++;
-            assert reqsProcessing <= 2;
+        /* Print the occurrence of this event */
+        System.out.println(
+                curRequest + " START" + (this.name != null ? " " + this.name : "") + ": " + evt.getTimestamp());
 
-            __startService(evt, r);
-        }
-
-        theQueue.add(r);
+        super.getParentTimeline().addEvent(nextEvent);
     }
 
     @Override
     void releaseRequest(Event evt) {
+        this.isBusy = false;
+
+        /* What request we are talking about? */
         Request curRequest = evt.getRequest();
 
-        // We may remove the penultimate member of the queue
-        assert theQueue.remove(curRequest);
+        /* Remove the request from the server queue */
+        Request queueHead = theQueue.removeFirst();
+
+        /* If the following is not true, something is wrong */
+        assert curRequest == queueHead;
 
         curRequest.recordDeparture(evt.getTimestamp());
-
+	
         /* Update busyTime */
         busyTime += curRequest.getDeparture() - curRequest.getServiceStart();
 
         /* Update cumulative response time at this server */
         cumulTq += curRequest.getDeparture() - curRequest.getArrival();
-
+	
         /* Update number of served requests */
         servedReqs++;
-
-        // Update currently processing requests
-        assert --reqsProcessing <= 2;
-
+	
         assert super.getNext() != null;
         super.getNext().receiveRequest(evt);
+	
+        /* Any new request to put into service?  */
+        if(!theQueue.isEmpty()) {
+            Request nextRequest = theQueue.peekFirst();
 
-        /* Any new request to put into service? */
-        Request nextRequest;
-        switch (theQueue.size()) {
-        case 1:
-            assert ++reqsProcessing <= 2;
-
-            nextRequest = theQueue.peekFirst();
-            __startService(evt, nextRequest);
-            break;
-        case 2:
-            // Process first 2 elements in the queue
-            if (reqsProcessing == 0) {
-                // new Request[] is passed in order to cast the returned Object array
-                // to a Request[] array
-                Request[] tempQueueArray = theQueue.toArray(new Request[0]);
-                __startService(evt, tempQueueArray[0]);
-                __startService(evt, tempQueueArray[1]);
-            } else if (reqsProcessing == 1) {
-                nextRequest = theQueue.peekFirst();
+            if (dist == null)
                 __startService(evt, nextRequest);
-            }
-            break;
+            else
+                __startService(evt, nextRequest, dist);
         }
+	
     }
+
 }
 

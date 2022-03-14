@@ -52,6 +52,10 @@ class SimpleServer extends EventGenerator {
         return super.next;
     }
 
+    Timeline getParentTimeline() {
+        return super.timeline;
+    }
+
     /* Given a name to this server that will be used for the trace and
      * statistics */
     public void setName (String name) {

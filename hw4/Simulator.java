@@ -133,7 +133,8 @@ public class Simulator {
 
         /* Create servers */
         SimpleServer serverPri = new SimpleServer(sim.timeline, servTime_pri);
-        SimpleServer serverSec = new DualProcessorServer(sim.timeline, servTime_sec);
+        SimpleServer serverSec_One = new SimpleServer(sim.timeline, servTime_sec);
+        SimpleServer serverSec_Two = new SimpleServer(sim.timeline, servTime_sec);
         SimpleServer serverTer = new SimpleServer(sim.timeline, servTime_ter);
 
         // Create array for generateDist
