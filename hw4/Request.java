@@ -32,8 +32,8 @@ class Request {
     }
 
     public void moveTo(EventGenerator at) {
-	this._at = at;
-	this.stats.put(this._at, new Stats());
+        this._at = at;
+        this.stats.put(this._at, new Stats());
     }
 
     public EventGenerator where() {

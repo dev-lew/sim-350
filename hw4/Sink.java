@@ -29,9 +29,7 @@ class Sink extends EventGenerator {
 	Request doneReq = evt.getRequest();
 	
 	/* Print the occurrence of this event */
-	System.out.println(evt.getRequest() + " DONE "
-			   + doneReq.getLastServer()
-			   + ": " + evt.getTimestamp());	
+  System.out.println(evt.getRequest() + " FROM S" + evt.getSource().toString() + " TO OUT " + ": " + evt.getTimestamp());
 
 	/* Update system stats */
 	doneRequests++;
@@ -53,9 +51,9 @@ class Sink extends EventGenerator {
 
     @Override
     public void printStats(Double time) {
-	System.out.println("TRESP: " + cumulRespTime/doneRequests);
-	System.out.println("TWAIT: " + cumulWaitTime/doneRequests);
-	System.out.println("RUNS: " + cumulProcSteps/doneRequests);
+	// System.out.println("TRESP: " + cumulRespTime/doneRequests);
+	// System.out.println("TWAIT: " + cumulWaitTime/doneRequests);
+	// System.out.println("RUNS: " + cumulProcSteps/doneRequests);
     }
         
 }

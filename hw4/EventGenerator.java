@@ -46,11 +46,11 @@ class EventGenerator {
     /* Generic event processing logic for a typical event generator
      * block --- a monitor will have to override this method. */
     void processEvent(Event evt) {
-	if (evt.getType() == EventType.BIRTH) {
-	    receiveRequest(evt);
-	} else if (evt.getType() == EventType.DEATH) {
-	    releaseRequest(evt);
-	}
+        if (evt.getType() == EventType.BIRTH) {
+            receiveRequest(evt);
+        } else if (evt.getType() == EventType.DEATH) {
+            releaseRequest(evt);
+        }
     }
 
     /* When no rate is set, default to some value */

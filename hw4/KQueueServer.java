@@ -47,9 +47,10 @@ class KQueueServer extends SimpleServer {
             System.out.println("QLEN: " + cumulQ/snapCount);
             System.out.println("TRESP: " + cumulTq/servedReqs);
         } else {
-            System.out.println(this.name + "UTIL " + ": " + busyTime/time);
-            System.out.println(this.name + "QLEN " + ": " + cumulQ/snapCount);
-            System.out.println(this.name + "TRESP: " + cumulTq / servedReqs);
-            System.out.println(this.name + "DROPPED: " + this.droppedRequests);
+            System.out.println("S" + this.name + " UTIL " + ": " + busyTime/time);
+            System.out.println("S" + this.name + " QLEN " + ": " + cumulQ/snapCount);
+            System.out.println("S" + this.name + " TRESP: " + cumulTq / servedReqs);
+            System.out.println("S" + this.name + " DROPPED: " + this.droppedRequests);
         }
+    }
 }

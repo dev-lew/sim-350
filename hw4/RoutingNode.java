@@ -16,31 +16,31 @@ class RoutingNode extends EventGenerator {
     private HashMap<EventGenerator, Double> routingTable = new HashMap<EventGenerator, Double>();
     
     public RoutingNode (Timeline timeline) {
-	super(timeline);	
+        super(timeline);	
     }
 
     @Override
     public void routeTo(EventGenerator next) {
-	routeTo(next, new Double(1));
+        routeTo(next, new Double(1));
     }
     
     public void routeTo(EventGenerator next, Double probability) {
-	/* Always assume that the same destination does not exist
-	 * twice in the routing table */
-	assert !routingTable.containsKey(next);
+        /* Always assume that the same destination does not exist
+         * twice in the routing table */
+        assert !routingTable.containsKey(next);
 
-	/* Add destination to routing table */
-	routingTable.put(next, probability);
+        /* Add destination to routing table */
+        routingTable.put(next, probability);
 
-	/* Perform a sanity check that the total probability has not
-	 * exceeded 1 */
-	Double totalP = new Double(0);
+        /* Perform a sanity check that the total probability has not
+         * exceeded 1 */
+        Double totalP = new Double(0);
 
-	for(Map.Entry<EventGenerator, Double> entry : routingTable.entrySet()) {
-	    totalP += entry.getValue();
-	}
+        for(Map.Entry<EventGenerator, Double> entry : routingTable.entrySet()) {
+            totalP += entry.getValue();
+        }
 
-	assert totalP <= 1;
+        assert totalP <= 1;
     }
 
     @Override
@@ -65,9 +65,12 @@ class RoutingNode extends EventGenerator {
         }
 
         /* Print the occurrence of this event */
-        if (!nextHop.toString().equals(""))
-            System.out.println(evt.getRequest() + " NEXT " + nextHop  + ": " + evt.getTimestamp());
-	
+
+
+        if (!nextHop.toString().equals("")) {
+            System.out.println(evt.getRequest() + " FROM S" + evt.getSource().toString() + " TO S" + nextHop + ": "
+                    + evt.getTimestamp());
+        }
         assert nextHop != null;
 
         nextHop.receiveRequest(evt);

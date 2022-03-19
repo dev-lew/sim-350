@@ -14,13 +14,36 @@ class Delegator extends RoutingNode {
         super(timeline);
     }
 
+    // Field hiding messes the call up
     public void routeTo(DualProcessorServer next) {
         /*
          * Always assume that the same destination does not exist twice in the routing
          * table
          */
         assert !routingTable.containsKey(next);
-        routeTo(next, .5);
+        routeTo(next, new Double(.5));
+    }
+
+    public void routeTo(DualProcessorServer next, Double probability) {
+        /*
+         * Always assume that the same destination does not exist twice in the routing
+         * table
+         */
+        assert !routingTable.containsKey(next);
+
+        /* Add destination to routing table */
+        routingTable.put(next, probability);
+
+        /*
+         * Perform a sanity check that the total probability has not exceeded 1
+         */
+        Double totalP = new Double(0);
+
+        for (Map.Entry<DualProcessorServer, Double> entry : routingTable.entrySet()) {
+            totalP += entry.getValue();
+        }
+
+        assert totalP <= 1;
     }
 
     @Override
@@ -31,8 +54,12 @@ class Delegator extends RoutingNode {
         // Always send to the processor (server) that is not busy, if possible
         for (Map.Entry<DualProcessorServer, Double> entry : routingTable.entrySet()) {
             DualProcessorServer server = entry.getKey();
+            assert server != null;
 
             if (!server.isBusy) {
+                System.out.println(evt.getRequest() + " FROM S" + evt.getSource().toString() + " TO S" +
+                                   server.toString().charAt(0) + ": "
+                                   + evt.getTimestamp());
                 server.receiveRequest(evt);
                 return;
             }
@@ -55,11 +82,13 @@ class Delegator extends RoutingNode {
             }
         }
 
-        /* Print the occurrence of this event */
-        if (!nextHop.toString().equals(""))
-            System.out.println(evt.getRequest() + " NEXT " + nextHop + ": " + evt.getTimestamp());
 
         assert nextHop != null;
+        /* Print the occurrence of this event */
+        if (!nextHop.toString().equals("")) {
+            System.out.println(evt.getRequest() + " FROM S" + evt.getSource().toString() + " TO S" + nextHop + ": "
+                    + evt.getTimestamp());
+        }
 
         nextHop.receiveRequest(evt);
     }

@@ -36,6 +36,12 @@ public class Simulator {
 
         for (int i = 0; i < resources.size(); ++i) {
             Double rate = resources.get(i).getRate();
+
+            // General service distribution
+            if (rate < 0) {
+                continue;
+            }
+
             if (monRate > rate) {
                 monRate = rate;
             }
@@ -115,7 +121,7 @@ public class Simulator {
         double prob_two = Double.valueOf(args[8]);
         double servTime_quad_three = Double.valueOf(args[9]);
         double prob_three = Double.valueOf(args[10]);
-        double sec_queue_length = Double.valueOf(args[11]);
+        int ter_queue_length = Integer.valueOf(args[11]);
         double prob_pri_to_sec = Double.valueOf(args[12]);
         double prob_pri_to_ter = Double.valueOf(args[13]);
         double prob_quad_to_exit = Double.valueOf(args[14]);
@@ -133,9 +139,9 @@ public class Simulator {
 
         /* Create servers */
         SimpleServer serverPri = new SimpleServer(sim.timeline, servTime_pri);
-        SimpleServer serverSec_One = new SimpleServer(sim.timeline, servTime_sec);
-        SimpleServer serverSec_Two = new SimpleServer(sim.timeline, servTime_sec);
-        SimpleServer serverTer = new SimpleServer(sim.timeline, servTime_ter);
+        DualProcessorServer serverSec_One = new DualProcessorServer(sim.timeline, servTime_sec);
+        DualProcessorServer serverSec_Two = new DualProcessorServer(sim.timeline, servTime_sec);
+        SimpleServer serverTer = new KQueueServer(sim.timeline, servTime_ter, ter_queue_length);
 
         // Create array for generateDist
         double dist[] = {servTime_quad_one, prob_one,
@@ -147,27 +153,45 @@ public class Simulator {
         /* Give some names to identify these servers when printing
          * trace and statistics */
         serverPri.setName("0");
-        serverSec.setName("1");
+        serverSec_One.setName("1,1");
+        serverSec_Two.setName("1,2");
         serverTer.setName("2");
         serverQuad.setName("3");
 	
-        /* Create two routing nodes */
+        /* Create routing nodes */
         RoutingNode rnPri = new RoutingNode(sim.timeline);
-        RoutingNode rnSec = new RoutingNode(sim.timeline);
+        Delegator rnSec = new Delegator(sim.timeline);
+        RoutingNode rnTer = new RoutingNode(sim.timeline);
 	
         /* Establish routing */
         trafficSource.routeTo(serverPri);
         serverPri.routeTo(rnPri);
-        rnPri.routeTo(trafficSink, prob_pri_exit);
-        rnPri.routeTo(serverSec, 1 - prob_pri_exit);
 
-        serverSec.routeTo(rnSec);
-        rnSec.routeTo(trafficSink, 1 - prob_sec_pri);
-        rnSec.routeTo(serverPri, prob_sec_pri);
+        // Send requests to the delegator
+        rnPri.routeTo(rnSec, prob_pri_to_sec);
+
+        // Delegate
+        rnSec.routeTo(serverSec_One);
+        rnSec.routeTo(serverSec_Two);
+
+        rnPri.routeTo(rnTer, prob_pri_to_ter);
+
+        // Route sec and ter to quad
+        serverSec_One.routeTo(serverQuad);
+        serverSec_Two.routeTo(serverQuad);
+        serverTer.routeTo(serverQuad);
+
+        serverQuad.routeTo(rnTer);
+        rnTer.routeTo(trafficSink, prob_quad_to_exit);
+        rnTer.routeTo(rnSec, prob_quad_to_sec);
+        rnTer.routeTo(serverTer, prob_quad_to_ter);
 
         /* Add resources to be monitored */
         sim.addMonitoredResource(serverPri);
-        sim.addMonitoredResource(serverSec);
+        sim.addMonitoredResource(serverSec_One);
+        sim.addMonitoredResource(serverSec_Two);
+        sim.addMonitoredResource(serverTer);
+        sim.addMonitoredResource(serverQuad);
         sim.addMonitoredResource(trafficSink);
 	
         /* Kick off simulation */

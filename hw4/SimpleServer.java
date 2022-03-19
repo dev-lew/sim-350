@@ -15,7 +15,7 @@ import java.util.*;
 class SimpleServer extends EventGenerator {
 
     public LinkedList<Request> theQueue = new LinkedList<Request>();
-    public Double servTime;
+    public double servTime = -1;
     public String name = null;
 
     // For general service distributions
@@ -72,8 +72,8 @@ class SimpleServer extends EventGenerator {
         cumulTw += curRequest.getServiceStart() - curRequest.getArrival();
 	    
         /* Print the occurrence of this event */
-        System.out.println(curRequest + " START" +
-                           (this.name != null ? " " + this.name : "")  +
+        System.out.println(curRequest + " START " +
+                           (this.name != null ? "S" + this.name : "")  +
                            ": " + evt.getTimestamp());
 	    
         super.timeline.addEvent(nextEvent);	    	
@@ -108,7 +108,7 @@ class SimpleServer extends EventGenerator {
         cumulTw += curRequest.getServiceStart() - curRequest.getArrival();
 
         /* Print the occurrence of this event */
-        System.out.println(curRequest + " START" + (this.name != null ? " " + this.name : "") +
+        System.out.println(curRequest + " START " + (this.name != null ? "S" + this.name : "") +
                            ": " + evt.getTimestamp());
 
         super.timeline.addEvent(nextEvent);
@@ -121,8 +121,10 @@ class SimpleServer extends EventGenerator {
         Request curRequest = evt.getRequest();
 
         curRequest.recordArrival(evt.getTimestamp());
-	
-        /* Upon receiving the request, check the queue size and act
+
+        
+        /* Upon receiving the re
+           quest, check the queue size and act
          * accordingly */
         if(theQueue.isEmpty()) {
             if (dist == null)
@@ -145,6 +147,7 @@ class SimpleServer extends EventGenerator {
         /* If the following is not true, something is wrong */
         assert curRequest == queueHead;
 
+        System.out.println(curRequest + " DONE S" + this.name + ": " + evt.getTimestamp());
         curRequest.recordDeparture(evt.getTimestamp());
 	
         /* Update busyTime */
@@ -190,16 +193,16 @@ class SimpleServer extends EventGenerator {
             System.out.println("QLEN: " + cumulQ/snapCount);
             System.out.println("TRESP: " + cumulTq/servedReqs);
         } else {
-            System.out.println(this.name + "UTIL " + ": " + busyTime/time);
-            System.out.println(this.name + "QLEN " + ": " + cumulQ/snapCount);
-            System.out.println(this.name + "TRESP: " + cumulTq / servedReqs);
+            System.out.println("S" + this.name + " UTIL" + ": " + busyTime/time);
+            System.out.println("S" + this.name + " QLEN" + ": " + cumulQ/snapCount);
+            System.out.println("S" +this.name + " TRESP: " + cumulTq / servedReqs);
         }
     }
 
     
     @Override
     public String toString() {
-        return (this.name != null ? this.name : "");
+        return (this.name != null ? this.name : "NULL");
     }
 
     
