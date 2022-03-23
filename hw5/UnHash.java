@@ -8,7 +8,7 @@ class UnHash {
      */
     static int unhash(String toUnhash) {
         String h;
-        for (int i = 1; ; i++) {
+        for (int i = 0; ; i++) {
             h = Hash.hash(i);
             if (h.equals(toUnhash)) {
                 return i;
@@ -16,9 +16,7 @@ class UnHash {
         }
     }
 
-    public static void main(String[] args) {
-        assert args.length == 1;
-
+    public static void main(String args[]) {
         System.out.println(unhash(args[0]));
     }
 }
