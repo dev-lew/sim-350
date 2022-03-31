@@ -1,4 +1,4 @@
-package hw6;
+package hw7;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,15 +43,15 @@ class Dispatcher {
 
 
     /*
-      Spawn workers and TODO: handle timeouts, workers may need
-      to be stored in a data structure
+      Spawn workers
      */
     void dispatch() {
         ArrayDeque<String> hashes = toArrayDeque(readHashes());
 
         for (int i = 0; i < this.numCpus; i++) {
             Worker w = new Worker(hashes, this.timeout);
-            w.start();
+            Thread t = new Thread(w);
+            t.start();
         }
     }
 

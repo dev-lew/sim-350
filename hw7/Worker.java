@@ -1,15 +1,16 @@
-package hw6;
+package hw7;
 
 import java.util.ArrayDeque;
 import java.time.Duration;
 import java.time.Instant;
 
-class Worker extends Thread {
+class Worker implements Runnable {
     /*
       The list of uncracked hashes from the file
       Each Worker carries a reference to it, so it is shared
     */
     ArrayDeque<String> hashList;
+
     long timeout;
     Instant startTime;
 
@@ -51,7 +52,7 @@ class Worker extends Thread {
         for (int i = 0; ; i++) {
             h = Hash.hash(i);
 
-            if (h.equals(toUnhash)) 
+            if (h.equals(toUnhash))
                 return i;
 
             if (getTimeElapsedMillis() > timeout)
@@ -76,8 +77,8 @@ class Worker extends Thread {
                 continue;
             } else {
                 System.out.println(result);
-                // System.out.println("Cracked by " + this.id);
+                System.out.println("Cracked by " + this.id);
             }
-        } 
+        }
     }
 }

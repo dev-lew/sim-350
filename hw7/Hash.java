@@ -1,4 +1,4 @@
-package hw6;
+package hw7;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
