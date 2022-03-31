@@ -12,6 +12,12 @@ class Dispatcher {
     private int numCpus;
     private long timeout;
 
+    /* Allow a dispatch that has no timeout */
+    public Dispatcher(String filename, int numCpus) {
+        this.filename = filename;
+        this.numCpus = numCpus;
+        this.timeout = Long.MAX_VALUE;
+    }
     public Dispatcher(String filename, int numCpus, long timeout) {
         this.filename = filename;
         this.numCpus = numCpus;
@@ -61,11 +67,16 @@ class Dispatcher {
 
 
     public static void main(String[] args) {
+        Dispatcher d;
         String filename = args[0];
         int numCpus = Integer.parseInt(args[1]);
-        long timeout = Long.parseLong(args[2]);
 
-        Dispatcher d = new Dispatcher(filename, numCpus, timeout);
+        if (args.length == 3) {
+            long timeout = Long.parseLong(args[2]);
+            d = new Dispatcher(filename, numCpus, timeout);
+        } else
+            d = new Dispatcher(filename, numCpus);
+
         d.dispatch();
     }
 }

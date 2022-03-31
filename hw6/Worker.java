@@ -7,7 +7,7 @@ import java.time.Instant;
 class Worker extends Thread {
     /*
       The list of uncracked hashes from the file
-      Each Worker carries a reference to it, so it is shared!
+      Each Worker carries a reference to it, so it is shared
     */
     ArrayDeque<String> hashList;
     long timeout;
@@ -22,7 +22,6 @@ class Worker extends Thread {
     public Worker(ArrayDeque<String> hashList, long timeout) {
         this.hashList = hashList;
         this.timeout = timeout;
-        this.startTime = Instant.now();
         this.id = numWorkers++;
     }
 
@@ -47,6 +46,8 @@ class Worker extends Thread {
      */
     int unhash(String toUnhash) {
         String h;
+        this.startTime = Instant.now();
+
         for (int i = 0; ; i++) {
             h = Hash.hash(i);
 
@@ -67,11 +68,13 @@ class Worker extends Thread {
                 break;
 
             /* Attempt to crack */
-            int result = unhash(assignedHash);
+            int result = unhash(this.assignedHash);
 
-            if (result == -1)
-                break;
-            else {
+            /* Print uncrackable hash and try to assign a new one */
+            if (result == -1) {
+                System.out.println(this.assignedHash);
+                continue;
+            } else {
                 System.out.println(result);
                 // System.out.println("Cracked by " + this.id);
             }
