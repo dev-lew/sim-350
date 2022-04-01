@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
 
 class Dispatcher {
     /* Entertain the idea of multiple dispatchers */
@@ -41,15 +44,16 @@ class Dispatcher {
     }
 
 
-
     /*
       Spawn workers
      */
     void dispatch() {
-        ArrayDeque<String> hashes = toArrayDeque(readHashes());
+        LinkedBlockingDeque<String> hashes = toLinkedBlockingDeque(readHashes());
+        LinkedBlockingDeque<String> hardHashes = new LinkedBlockingDeque<>();
+        List<Integer> hints = Collections.synchronizedList(new ArrayList<Integer>());
 
         for (int i = 0; i < this.numCpus; i++) {
-            Worker w = new Worker(hashes, this.timeout);
+            Worker w = new Worker(hashes, this.timeout, hardHashes, hints);
             Thread t = new Thread(w);
             t.start();
         }
@@ -61,8 +65,10 @@ class Dispatcher {
       The ArrayDeque constructor takes a collection and constructs the
       Deque
     */
-    private ArrayDeque<String> toArrayDeque(List<String> hashes) {
-        return new ArrayDeque<String>(hashes);
+    private LinkedBlockingDeque<String> toLinkedBlockingDeque(List<String> hashes) {
+        LinkedBlockingDeque<String> l = new LinkedBlockingDeque<>();
+        l.addAll(hashes);
+        return l;
     }
 
 

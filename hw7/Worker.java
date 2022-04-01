@@ -1,15 +1,21 @@
 package hw7;
 
-import java.util.ArrayDeque;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
 
 class Worker implements Runnable {
+    /* The list of uncracked hashes from the file */
+    LinkedBlockingDeque<String> hashList;
+
     /*
-      The list of uncracked hashes from the file
-      Each Worker carries a reference to it, so it is shared
+      hardHashes holds the hashes that require a hint
+      hints holds the integers that were used to crack easy hashes
+      Both of these data structures are shared between threads
     */
-    ArrayDeque<String> hashList;
+    private LinkedBlockingDeque<String> hardHashes;
+    private List<Integer> hints;
 
     long timeout;
     Instant startTime;
@@ -20,9 +26,12 @@ class Worker implements Runnable {
     static int numWorkers = 0;
     private int id;
 
-    public Worker(ArrayDeque<String> hashList, long timeout) {
+    public Worker(LinkedBlockingDeque<String> hashList, long timeout,
+                  LinkedBlockingDeque<String> hardHashes, List<Integer> hints) {
         this.hashList = hashList;
         this.timeout = timeout;
+        this.hardHashes = hardHashes;
+        this.hints = hints;
         this.id = numWorkers++;
     }
 
@@ -34,14 +43,12 @@ class Worker implements Runnable {
 
     boolean assignHash() {
         /* If the hashList is empty, this worker is done */
-        synchronized (hashList) {
-            this.assignedHash = hashList.poll();
-            return this.assignedHash != null;
-        }
+        this.assignedHash = hashList.poll();
+        return this.assignedHash != null;
     }
 
     /*
-      Attempts to crack a hash
+      Attempts to crack a hash and populates hints or hardHashes
       Will timeout if elapsed time is greater than specified
       timeout duration
      */
@@ -52,11 +59,16 @@ class Worker implements Runnable {
         for (int i = 0; ; i++) {
             h = Hash.hash(i);
 
-            if (h.equals(toUnhash))
+            if (h.equals(toUnhash)) {
+                int hint = Integer.parseInt(h);
+                hints.add(hint);
                 return i;
+            }
 
-            if (getTimeElapsedMillis() > timeout)
+            if (getTimeElapsedMillis() > timeout) {
+                hardHashes.add(this.assignedHash);
                 return -1;
+            }
         }
     }
 
@@ -71,13 +83,12 @@ class Worker implements Runnable {
             /* Attempt to crack */
             int result = unhash(this.assignedHash);
 
-            /* Print uncrackable hash and try to assign a new one */
-            if (result == -1) {
-                System.out.println(this.assignedHash);
+            /* try to assign a new one */
+            if (result == -1)
                 continue;
-            } else {
+            else {
                 System.out.println(result);
-                System.out.println("Cracked by " + this.id);
+                // System.out.println("Cracked by " + this.id);
             }
         }
     }
